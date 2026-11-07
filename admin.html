@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HykuCass — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0A1A16;--felt:#0F2E26;--gold:#D9B05B;--ivory:#F4EEDC;--ruby:#B8322A;--mist:#8FA79F;--green:#2A7A4B}
+*{box-sizing:border-box}body{margin:0;background:var(--ink);color:var(--ivory);font-family:Inter,system-ui,sans-serif;font-size:15px}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid var(--felt)}
+.logo{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:22px}.logo span{color:var(--gold)}
+.badge{background:var(--ruby);color:#fff;font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;margin-left:8px}
+nav{display:flex;gap:4px;padding:12px 16px;border-bottom:1px solid var(--felt);flex-wrap:wrap}
+nav button{background:none;border:1px solid transparent;color:var(--mist);padding:6px 14px;border-radius:8px;cursor:pointer;font:inherit}
+nav button.on{border-color:var(--gold);color:var(--ivory)}
+main{padding:16px;max-width:900px;margin:0 auto}
+.card{background:var(--felt);border:1px solid #1a3a2e;border-radius:14px;padding:16px;margin-bottom:16px}
+h2{font-family:Fraunces,Georgia,serif;margin:0 0 12px;font-size:20px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;color:var(--mist);font-weight:600;padding:6px 8px;border-bottom:1px solid #1a3a2e}
+td{padding:7px 8px;border-bottom:1px solid #122218;vertical-align:middle}
+tr:last-child td{border:none}
+.pill{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600}
+.pill.pending{background:#2a2a0a;color:var(--gold)}.pill.verified{background:#0a2a1a;color:#4ade80}
+.pill.blocked{background:#2a0a0a;color:var(--ruby)}.pill.paid{background:#0a2a1a;color:#4ade80}
+.pill.approved{background:#0a2a1a;color:#4ade80}.pill.rejected{background:#2a0a0a;color:var(--ruby)}
+button.act{font:inherit;padding:4px 12px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600}
+button.ok{background:var(--green);color:#fff}button.no{background:var(--ruby);color:#fff}
+button.ky{background:var(--gold);color:var(--ink)}button.bl{background:#444;color:#fff}
+input.tk{width:100%;padding:8px 12px;border-radius:10px;border:1px solid var(--mist);background:var(--ink);color:var(--ivory);font:inherit;margin-bottom:12px}
+#login-box{max-width:360px;margin:60px auto}.msg{color:var(--mist);font-size:13px;margin-top:8px}
+.stat{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.stat-card{flex:1;min-width:140px;background:var(--felt);border:1px solid #1a3a2e;border-radius:12px;padding:14px}
+.stat-card .val{font-family:Fraunces,Georgia,serif;font-size:28px;color:var(--gold)}
+.stat-card .lbl{font-size:12px;color:var(--mist);margin-top:4px}
+.sec{display:none}.sec.on{display:block}
+select.ky{font:inherit;padding:4px 8px;border-radius:8px;border:1px solid var(--mist);background:var(--ink);color:var(--ivory)}
+</style></head><body>
+<header>
+  <div><span class="logo">Hyku<span>Cass</span></span> <span style="color:var(--mist);font-size:13px">Admin</span></div>
+  <button class="act bl" id="logout-btn" hidden>Sair</button>
+</header>
+
+<div id="login-box" class="card">
+  <h2>Acesso Admin</h2>
+  <input class="tk" id="tk" type="password" placeholder="Token de administrador">
+  <button class="act ok" id="enter" style="width:100%;padding:10px">Entrar</button>
+  <div class="msg" id="lmsg"></div>
+</div>
+
+<div id="panel" hidden>
+  <nav>
+    <button class="on" data-s="dash">Visão geral</button>
+    <button data-s="players">Jogadores</button>
+    <button data-s="withdrawals">Saques <span class="badge" id="wbadge">0</span></button>
+    <button data-s="rounds">Apostas</button>
+  </nav>
+  <main>
+    <!-- DASH -->
+    <div class="sec on" id="s-dash">
+      <div class="stat">
+        <div class="stat-card"><div class="val" id="d-players">—</div><div class="lbl">Jogadores</div></div>
+        <div class="stat-card"><div class="val" id="d-balance">—</div><div class="lbl">Saldo total</div></div>
+        <div class="stat-card"><div class="val" id="d-pending">—</div><div class="lbl">Saques pendentes</div></div>
+        <div class="stat-card"><div class="val" id="d-rounds">—</div><div class="lbl">Apostas hoje</div></div>
+      </div>
+    </div>
+    <!-- PLAYERS -->
+    <div class="sec" id="s-players">
+      <div class="card">
+        <h2>Jogadores</h2>
+        <table><thead><tr><th>ID</th><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Saldo</th><th>Status</th><th>Desde</th><th>Ações</th></tr></thead>
+        <tbody id="pt"></tbody></table>
+      </div>
+    </div>
+    <!-- WITHDRAWALS -->
+    <div class="sec" id="s-withdrawals">
+      <div class="card">
+        <h2>Saques pendentes</h2>
+        <table><thead><tr><th>ID</th><th>Jogador</th><th>Valor</th><th>Chave Pix</th><th>Data</th><th>Ações</th></tr></thead>
+        <tbody id="wt"></tbody></table>
+      </div>
+    </div>
+    <!-- ROUNDS -->
+    <div class="sec" id="s-rounds">
+      <div class="card">
+        <h2>Últimas 50 apostas</h2>
+        <table><thead><tr><th>Jogo</th><th>Escolha</th><th>Aposta</th><th>Prêmio</th><th>Resultado</th><th>Data</th></tr></thead>
+        <tbody id="rt"></tbody></table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const R=c=>(c/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const D=s=>new Date(s).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'});
+const $=s=>document.querySelector(s);
+let TOKEN='';
+const api=async(u,b)=>{const h={'x-admin-token':TOKEN};if(b)h['Content-Type']='application/json';
+ const r=await fetch(u,b?{method:'POST',headers:h,body:JSON.stringify(b)}:{headers:h});return r.json()};
+const KYC={active:'Ativo',blocked:'Bloqueado'};
+const PILL={pending:'pending',verified:'verified',blocked:'blocked',paid:'paid',approved:'approved',rejected:'rejected'};
+function pill(s,label){return`<span class="pill ${PILL[s]||''}">${label||s}</span>`}
+
+async function loadDash(){
+  const[pl,wd,rd]=await Promise.all([api('/api/admin/players'),api('/api/admin/withdrawals'),api('/api/admin/rounds')]);
+  const players=pl.players||[];const ws=(wd||[]).filter(w=>w.status==='pending');const rounds=rd.rounds||[];
+  $('#d-players').textContent=players.length;
+  $('#d-balance').textContent=R(players.reduce((a,p)=>a+p.balance,0));
+  $('#d-pending').textContent=ws.length;
+  const today=new Date().toISOString().slice(0,10);
+  $('#d-rounds').textContent=rounds.filter(r=>r.created.startsWith(today)).length;
+  $('#wbadge').textContent=ws.length;
+}
+async function loadPlayers(){
+  const d=await api('/api/admin/players');
+  $('#pt').innerHTML=(d.players||[]).map(p=>`<tr>
+   <td>${p.id}</td><td>${p.name}</td><td>${p.email}</td><td>${p.phone}</td><td>${R(p.balance)}</td>
+   <td>${pill(p.kyc,KYC[p.kyc])}</td><td>${D(p.created)}</td>
+   <td style="display:flex;gap:6px;flex-wrap:wrap">
+     <select class="ky" data-uid="${p.id}">
+       <option value="active" ${p.kyc==='active'?'selected':''}>Ativo</option>
+       <option value="blocked" ${p.kyc==='blocked'?'selected':''}>Bloqueado</option>
+     </select>
+     <button class="act ky" onclick="setKyc(${p.id},this)">Salvar</button>
+   </td></tr>`).join('');
+}
+async function loadWithdrawals(){
+  const d=await api('/api/admin/withdrawals');
+  const ws=(d||[]);$('#wbadge').textContent=ws.filter(w=>w.status==='pending').length;
+  $('#wt').innerHTML=ws.map(w=>`<tr>
+   <td>#${w.id}</td><td>${w.user_id}</td><td>${R(w.amount)}</td><td>${w.pix_key}</td><td>${D(w.created)}</td>
+   <td style="display:flex;gap:6px">${w.status==='pending'
+     ?`<button class="act ok" onclick="actW(${w.id},'approve')">Aprovar</button>
+        <button class="act no" onclick="actW(${w.id},'reject')">Recusar</button>`
+     :pill(w.status)}</td></tr>`).join('');
+}
+async function loadRounds(){
+  const d=await api('/api/admin/rounds');
+  const cfg=(await fetch('/api/config').then(r=>r.json())).games;
+  $('#rt').innerHTML=(d.rounds||[]).map(r=>{
+   const g=cfg[r.game]?.name||r.game;
+   const ch=typeof r.choice==='string'?r.choice:JSON.stringify(r.choice);
+   const win=r.payout>r.bet;
+   return`<tr><td>${g}</td><td>${ch}</td><td>${R(r.bet)}</td><td>${R(r.payout)}</td>
+    <td>${win?'<span style="color:#4ade80">Ganhou</span>':'<span style="color:var(--mist)">Perdeu</span>'}</td>
+    <td>${D(r.created)}</td></tr>`}).join('');
+}
+window.setKyc=async(uid,btn)=>{const sel=btn.previousElementSibling;
+ const r=await api('/api/admin/kyc',{userId:uid,status:sel.value});
+ if(!r.error)loadPlayers()};
+window.actW=async(id,act)=>{await api('/api/admin/withdrawals/'+id+'/'+act,{});loadWithdrawals();loadDash()};
+
+const sections={dash:loadDash,players:loadPlayers,withdrawals:loadWithdrawals,rounds:loadRounds};
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+ document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
+ const k=b.dataset.s;$('#s-'+k).classList.add('on');sections[k]()});
+
+$('#enter').onclick=async()=>{TOKEN=$('#tk').value.trim();
+ const r=await api('/api/admin/players');
+ if(r.error){$('#lmsg').textContent=r.error;TOKEN='';return}
+ $('#login-box').hidden=true;$('#panel').hidden=false;$('#logout-btn').hidden=false;loadDash()};
+$('#logout-btn').onclick=()=>{TOKEN='';$('#login-box').hidden=false;$('#panel').hidden=true;$('#logout-btn').hidden=true;$('#tk').value=''};
+$('#tk').addEventListener('keydown',e=>e.key==='Enter'&&$('#enter').click());
+</script></body></html>

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HykuCass</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0A1A16;--felt:#0F2E26;--gold:#D9B05B;--ivory:#F4EEDC;--ruby:#B8322A;--mist:#8FA79F}
+*{box-sizing:border-box}body{margin:0;background:var(--ink);color:var(--ivory);font-family:Inter,system-ui,sans-serif}
+header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--felt)}
+.logo{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:26px}.logo span{color:var(--gold)}
+#bal{font-weight:600;color:var(--gold)}main{max-width:560px;margin:0 auto;padding:20px}
+.tabs,.opts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+button{font:inherit;min-height:44px;padding:8px 14px;border-radius:10px;border:1px solid var(--gold);background:var(--felt);color:var(--ivory);cursor:pointer}
+button.on{background:var(--gold);color:var(--ink);font-weight:600}
+button.play{width:100%;background:var(--ruby);border-color:var(--ruby);font-weight:600;margin-top:8px}
+.card{background:var(--felt);border:1px solid var(--gold);border-radius:16px;padding:20px}
+h2{font-family:Fraunces,Georgia,serif;margin:0 0 4px}small{color:var(--mist)}
+label{display:block;margin:12px 0 4px;color:var(--mist);font-size:14px}
+input{width:100%;min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid var(--mist);background:var(--ink);color:var(--ivory);font:inherit}
+#out{margin-top:16px;min-height:60px;font-size:18px}.win{color:var(--gold)}.lose{color:var(--mist)}
+dialog,.sec{margin-top:16px}textarea{width:100%;min-height:64px;background:var(--ink);color:var(--ivory);border:1px solid var(--mist);border-radius:10px;padding:8px;font:inherit}.row{display:flex;gap:8px;flex-wrap:wrap}.msg{color:var(--mist);margin-top:8px}footer{text-align:center;color:var(--mist);font-size:13px;padding:24px}
+</style></head><body>
+<header><div class="logo">Hyku<span>Cass</span></div><div class="row"><span id="bal"></span><button id="out-btn" hidden>Sair</button></div></header>
+<main>
+<div class="card" id="auth"><h2>Entrar</h2><label>E-mail</label><input id="em" type="email" autocomplete="email">
+<div id="reg" hidden><label>Nome completo</label><input id="nm" type="text" autocomplete="name" placeholder="Seu nome"><label>Telefone</label><input id="ph" type="tel" inputmode="numeric" placeholder="11999999999"></div>
+<label>Senha (mín. 8 caracteres)</label><input id="pw" type="password" autocomplete="current-password">
+<div class="row"><button class="play" id="login">Entrar</button><button id="toreg">Criar conta</button></div><div class="msg" id="amsg"></div></div>
+<div id="app" hidden><div class="tabs" id="tabs"></div>
+<div class="card"><h2 id="gname"></h2><small id="rtp"></small>
+<label>Escolha</label><div class="opts" id="opts"></div>
+<label id="nl" hidden>Número (0 a 36)</label><input id="num" type="number" min="0" max="36" value="17" hidden>
+<label for="bet">Aposta (R$)</label><input id="bet" type="number" step="0.01">
+<button class="play" id="go">Jogar</button><div id="out" aria-live="polite"></div></div>
+<div class="card sec"><h2>Carteira</h2><small id="kyc"></small>
+<label>Depósito via Pix (R$)</label><div class="row"><input id="dep" type="number" step="0.01" value="50.00" style="flex:1"><button id="depb">Gerar Pix</button></div>
+<div id="pixbox" hidden><label>Pix copia e cola</label><textarea id="code" readonly></textarea><div class="row"><button id="cp">Copiar</button><button id="sim" hidden>Simular pagamento (teste)</button></div></div>
+<label>Saque (R$) e chave Pix</label><div class="row"><input id="wa" type="number" step="0.01" placeholder="20.00" style="flex:1"><input id="wk" placeholder="Chave Pix" style="flex:2"></div>
+<button id="wb" style="margin-top:8px">Solicitar saque</button><div class="msg" id="wmsg"></div></div></div></main>
+<footer>+18 · Jogue com responsabilidade · hykucass.bet.br</footer>
+<script>
+
+const $=s=>document.querySelector(s),R=c=>(c/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),N={player:'Jogador',banker:'Banca',tie:'Empate'};
+let cfg,game,pick;
+const api=async(u,b)=>(await fetch(u,b?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{})).json();
+const opts=k=>{const p=cfg[k].payouts;return k==='roulette'?[['Vermelho',p.color,{type:'color',value:'red'}],['Preto',p.color,{type:'color',value:'black'}],['Verde (0)',p.green,{type:'green'}],['Número',p.number,{type:'number'}]]:[['Jogador',p.player,'player'],['Banca',p.banker,'banker'],['Empate',p.tie,'tie']]};
+function select(k){game=k;pick=null;$('#gname').textContent=cfg[k].name;$('#rtp').textContent='RTP teórico: '+cfg[k].rtp+' · aposta mínima '+R(cfg[k].minBet);
+$('#bet').value=(cfg[k].minBet/100).toFixed(2);$('#out').textContent='';
+document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
+$('#opts').innerHTML='';opts(k).forEach((o,i)=>{const b=document.createElement('button');b.textContent=o[0]+' '+String(o[1]).replace('.',',')+'x';
+b.onclick=()=>{pick=o[2];document.querySelectorAll('#opts button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+const n=o[2].type==='number';$('#num').hidden=$('#nl').hidden=!n};$('#opts').append(b)})}
+$('#go').onclick=async()=>{if(!pick)return $('#out').textContent='Escolha uma opção.';
+const c=typeof pick==='object'&&pick.type==='number'?{type:'number',value:+$('#num').value}:pick;
+const r=await api('/api/play',{game,choice:c,bet:Math.round(parseFloat($('#bet').value)*100)});
+if(r.error){if(r.error==='Faça login')refresh();return $('#out').textContent=r.error}
+const d=r.detail,txt=game==='roulette'?'Saiu '+d.number+' ('+{red:'vermelho',black:'preto',green:'verde'}[d.color]+')':
+(game==='bacbo'?'Jogador ':'Jogador ')+d.pt+' x '+d.bt+' Banca → '+N[d.result];
+$('#out').innerHTML=txt+'<br><span class="'+(r.payout>0?'win':'lose')+'">'+(r.payout>0?'Retorno: '+R(r.payout):'Sem retorno')+'</span>';$('#bal').textContent=R(r.balance)};
+
+const msg=(id,t)=>$(id).textContent=t||'';
+async function refresh(){const r=await api('/api/me'),ok=!r.error;$('#auth').hidden=ok;$('#app').hidden=!ok;$('#out-btn').hidden=!ok;
+ if(ok){$('#bal').textContent=R(r.balance);$('#kyc').textContent='Verificação (KYC): '+({pending:'pendente',verified:'verificada',blocked:'bloqueada'}[r.kyc])+' · saque exige verificação'}else $('#bal').textContent=''}
+let reg=false;$('#toreg').onclick=()=>{reg=!reg;$('#reg').hidden=!reg;$('#login').textContent=reg?'Cadastrar':'Entrar';$('#toreg').textContent=reg?'Já tenho conta':'Criar conta'};
+$('#login').onclick=async()=>{const b={email:$('#em').value,password:$('#pw').value};if(reg){b.name=$('#nm').value;b.phone=$('#ph').value}
+ const r=await api(reg?'/api/register':'/api/login',b);if(r.error)return msg('#amsg',r.error);msg('#amsg');refresh()};
+$('#out-btn').onclick=async()=>{await api('/api/logout',{});refresh()};
+let pid,tm;
+$('#depb').onclick=async()=>{const r=await api('/api/deposit',{amount:Math.round(parseFloat($('#dep').value)*100)});
+ if(r.error)return msg('#wmsg',r.error);msg('#wmsg');pid=r.id;$('#code').value=r.code;$('#pixbox').hidden=false;clearInterval(tm);
+ tm=setInterval(async()=>{const c=await api('/api/pix-status?id='+pid);if(c.status==='paid'){clearInterval(tm);$('#pixbox').hidden=true;msg('#wmsg','Depósito de '+R(c.amount)+' confirmado.');refresh()}},3000)};
+$('#cp').onclick=()=>navigator.clipboard&&navigator.clipboard.writeText($('#code').value);
+$('#sim').onclick=()=>api('/api/pix-pay',{id:pid});
+$('#wb').onclick=async()=>{const r=await api('/api/withdraw',{amount:Math.round(parseFloat($('#wa').value)*100),pixKey:$('#wk').value});
+ msg('#wmsg',r.error||'Saque solicitado, aguardando aprovação.');refresh()};
+(async()=>{const c=await api('/api/config');cfg=c.games;$('#sim').hidden=!c.mock;
+ Object.keys(cfg).forEach(k=>{const b=document.createElement('button');b.dataset.k=k;b.textContent=cfg[k].name;b.onclick=()=>select(k);$('#tabs').append(b)});select(Object.keys(cfg)[0]);refresh()})();
+</script></body></html>
